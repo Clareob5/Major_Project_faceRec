@@ -4,8 +4,9 @@ import cv2
 import datetime, time
 import os, sys
 import numpy as np
+from PIL import Image
 from threading import Thread
-from app.utils import pipeline_model
+from utils import pipeline_model
 
 from db import db_init, db
 from models import Img
@@ -29,6 +30,8 @@ except OSError as error:
 
 app = Flask(__name__, template_folder='./templates')
 
+UPLOAD_FLODER = 'static/uploads'
+
 # SQLAlchemy config. Read more: https://flask-sqlalchemy.palletsprojects.com/en/2.x/
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///img.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -49,29 +52,30 @@ def base():
 def capture():
     return render_template('capture.html')
 
+
 def getwidth(path):
     img = Image.open(path)
-    size = img.size # width and height
-    aspect = size[0]/size[1] # width / height
+    size = img.size  # width and height
+    aspect = size[0]/size[1]  # width / height
     w = 300 * aspect
     return int(w)
 
-def gender():
-
+@app.route('/predict', methods=['POST','GET'])
+def predict():
     if request.method == "POST":
         f = request.files['image']
-        filename=  f.filename
-        path = os.path.join(UPLOAD_FLODER,filename)
+        filename = f.filename
+        path = os.path.join(UPLOAD_FLODER, filename)
         f.save(path)
         w = getwidth(path)
         # prediction (pass to pipeline model)
-        pipeline_model(path,filename,color='bgr')
+        pipeline_model(path, filename, color='bgr')
+
+        return render_template('predict.html', fileupload=True, img_name=filename, w=w)
+
+    return render_template('predict.html', fileupload=False, img_name="freeai.png")
 
 
-        return render_template('gender.html',fileupload=True,img_name=filename, w=w)
-
-
-    return render_template('gender.html',fileupload=False,img_name="freeai.png")
 
 @app.route('/upload', methods=['POST'])
 def upload():
