@@ -41,10 +41,6 @@ db_init(app)
 camera = cv2.VideoCapture(0)
 
 @app.route('/')
-def hello_world():
-    return 'Hello, World!'
-
-@app.route('/base')
 def base():
     return render_template('base.html')
 
@@ -63,8 +59,9 @@ def getwidth(path):
 @app.route('/predict', methods=['POST','GET'])
 def predict():
     if request.method == "POST":
-        f = request.files['image']
-        filename = f.filename
+        img = request.files['image']
+        filename = img.filename
+        mimetype = img.mimetype
         path = os.path.join(UPLOAD_FLODER, filename)
         f.save(path)
         w = getwidth(path)
@@ -155,5 +152,5 @@ def tasks():
             camera.release()
             cv2.destroyAllWindows()                     
     elif request.method=='GET':
-        return render_template('index.html')
+        return render_template('capture.html')
     return render_template('index.html')
