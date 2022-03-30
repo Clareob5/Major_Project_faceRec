@@ -5,6 +5,8 @@ import cv2
 from tensorflow import keras
 from keras.preprocessing import image
 from datetime import datetime
+from db import db_init, db
+from models import Attendance
 
 
 model_cnn = keras.models.load_model("./model/my_h5_model.h5")
@@ -18,19 +20,35 @@ mapped_faces = pickle.load(open("Mapped_Faces.pkl", 'rb'))
 # settings
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-def markAttendance(name):
-    with open('Attendance.csv','r+') as f:
-        myDataList = f.readlines()
-        nameList = []
-        for line in myDataList:
-            entry = line.split(',')
-            nameList.append(entry[0])
-        if name not in nameList:
-            now = datetime.now()
-            dtString = now.strftime('%H:%M:%S')
-            f.writelines(f'\n{name},{dtString}')
+# def markAttendance(name):
+#     with open('Attendance.csv','r+') as f:
+#         myDataList = f.readlines()
+#         nameList = []
+#         for line in myDataList:
+#             entry = line.split(',')
+#             nameList.append(entry[0])
+#         if name not in nameList:
+#             now = datetime.now()
+#             dtString = now.strftime('%H:%M:%S')
+#             f.writelines(f'\n{name},{dtString}')
 
-markAttendance('Clare')
+
+def markAttendance(name):
+    name = name
+    print(name)
+    now = datetime.now()
+    timestamp = now.strftime('%H:%M:%S')
+    # description = request.form['description']
+    # pic = request.files['pic']
+    # #mimetype = pic.mimetype
+
+    # #filename = secure_filename(pic.filename)
+
+    att = Attendance(name = name, timestamp = timestamp)
+    print('attendance',att)
+    db.session.add(att)
+    db.session.commit()
+
 
 
 def pipeline_model(path,filename,color='bgr'):
@@ -55,7 +73,7 @@ def pipeline_model(path,filename,color='bgr'):
     org = (50, 50)
     
     # fontScale
-    fontScale = 1
+    fontScale = 10
     
     # Blue color in BGR
     color = (255, 0, 0)
