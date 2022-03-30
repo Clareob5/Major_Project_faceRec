@@ -107,7 +107,7 @@ def upload():
 
     return render_template('gender.html',fileupload=False,img_name="freeai.png")
 
-    return 'Img Uploaded!', 200
+    # return 'Img Uploaded!', 200
 
 
 def gen_frames():  # generate frame by frame from camera
