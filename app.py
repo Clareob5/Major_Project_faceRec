@@ -154,3 +154,4 @@ def tasks():
     elif request.method=='GET':
         return render_template('capture.html')
     return render_template('index.html')
+    return render_template('capture.html')
