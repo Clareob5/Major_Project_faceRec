@@ -8,6 +8,31 @@
                   Homepage
               </p>
           </div>
+          <div>
+                <h3></h3>
+                  <a href="{{ url_for('index') }}"></a>
+                </h3>
+                
+                <hr />
+                
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>timestamp</th>
+                    </tr>
+                  </thead>
+                
+                  <tbody>
+                    {% for student in attendance %}
+                    <tr>
+                      <td>{{ student.name }}</td>
+                        <td>{{ student.timestamp }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+          </div>
         </div>
 
 {% endblock  %}
