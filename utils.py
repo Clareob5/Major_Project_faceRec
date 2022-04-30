@@ -9,8 +9,8 @@ from db import db_init, db
 from models import Attendance
 
 
-model_cnn = keras.models.load_model("./model/my_h5_model.h5")
-mapped_faces = pickle.load(open("Mapped_Faces.pkl", 'rb'))
+model_cnn = keras.models.load_model("./model/updated_model.h5")
+mapped_faces = pickle.load(open("./model/Mapped_Faces.pkl", 'rb'))
 
 
 # print('Model loaded sucessfully')
@@ -55,8 +55,6 @@ def pipeline_model(path,filename,color='bgr'):
     
     ImagePath=path
     test_image=image.load_img(ImagePath,target_size=(64, 64))
-    print(test_image)
-    test_image=image.img_to_array(test_image)
     print(test_image)
     test_image=image.img_to_array(test_image)
 
