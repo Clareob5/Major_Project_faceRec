@@ -2,15 +2,19 @@ import numpy as np
 import sklearn
 import pickle
 import cv2
+import os
 from tensorflow import keras
 from keras.preprocessing import image
 from datetime import datetime
 from db import db_init, db
 from models import Attendance
+from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 
 
-model_cnn = keras.models.load_model("./model/updated_model.h5")
-mapped_faces = pickle.load(open("./model/Mapped_Faces.pkl", 'rb'))
+model_cnn = keras.models.load_model("./model/my_h5_model.h5")
+mapped_faces = pickle.load(open("Mapped_Faces.pkl", 'rb'))
+
+nameList = []
 
 
 # print('Model loaded sucessfully')
@@ -20,82 +24,98 @@ mapped_faces = pickle.load(open("./model/Mapped_Faces.pkl", 'rb'))
 # settings
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-# def markAttendance(name):
-#     with open('Attendance.csv','r+') as f:
-#         myDataList = f.readlines()
-#         nameList = []
-#         for line in myDataList:
-#             entry = line.split(',')
-#             nameList.append(entry[0])
-#         if name not in nameList:
-#             now = datetime.now()
-#             dtString = now.strftime('%H:%M:%S')
-#             f.writelines(f'\n{name},{dtString}')
-
-
 def markAttendance(name):
     name = name
-    print(name)
     now = datetime.now()
     timestamp = now.strftime('%H:%M:%S')
-    # description = request.form['description']
-    # pic = request.files['pic']
-    # #mimetype = pic.mimetype
-
-    # #filename = secure_filename(pic.filename)
 
     att = Attendance(name = name, timestamp = timestamp)
     print('attendance',att)
     db.session.add(att)
     db.session.commit()
 
-
+    return 'added to db'
 
 def pipeline_model(path,filename,color='bgr'):
     
     ImagePath=path
     test_image=image.load_img(ImagePath,target_size=(64, 64))
     print(test_image)
-    test_image=image.img_to_array(test_image)
 
     test_image=np.expand_dims(test_image,axis=0)
-
     result=model_cnn.predict(test_image,verbose=0)
-    print(result)
+    #print(result)
     print('Prediction is: ',mapped_faces[np.argmax(result)])
 
     # font
     font = cv2.FONT_HERSHEY_SIMPLEX
-    
-    # org
     org = (50, 50)
-    
-    # fontScale
     fontScale = 10
-    
-    # Blue color in BGR
     color = (255, 0, 0)
-    
-    # Line thickness of 2 px
     thickness = 2
    
-    # Using cv2.putText() method
-    #cv2.putText(test_image,mapped_faces[np.argmax(result)], org, font, fontScale, color, thickness, cv2.LINE_AA)
-    # step -11:
     text = mapped_faces[np.argmax(result)]
-    #print(text)
     cv2.putText(test_image,text,(1000,1000),font,5,(255,255,0),2)
+    os.remove(path)
     markAttendance(text)
     
     cv2.imwrite('./static/predict/{}'.format(filename),test_image)
     
+def img_manipulate(image):
+
+    now = datetime.now()
+    p = os.path.sep.join(['shots', "shot_{}.png".format(str(now).replace(":", ''))])
+
+    datagen = ImageDataGenerator(
+        rotation_range=30,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest')
 
 
+    # this is a PIL image
+    img = load_img(image)
+    x = img_to_array(img)  # this is a Numpy array with shape (3, 150, 150)
+    # this is a Numpy array with shape (1, 3, 150, 150)
+    x = x.reshape((1,) + x.shape)
+
+    # the .flow() command below generates batches of randomly transformed images
+    # and saves the results to the `preview/` directory
+    i = 0
+    for batch in datagen.flow(x, batch_size=1,
+                            save_to_dir='Faces Images\\Final Training Images\\', save_prefix='image', save_format='jpg'):
+        i += 1
+        if i > 20:
+            break  # otherwise the generator would loop indefinitely
 
 
+def gen_frames():  # generate frame by frame from camera
+    global out, capture, rec_frame
+    while True:
+        success, frame = camera.read()
+        if success:
+            if(capture):
+                capture = 0
+                now = datetime.datetime.now()
+                p = os.path.sep.join(
+                    ['shots', "shot_{}.png".format(str(now).replace(":", ''))])
+                cv2.imwrite(p, frame)
+                filename = os.path.basename(p)
+                pipeline_model(path, filename, color='bgr')
+                img_manipulate(frame)
+            try:
+                ret, buffer = cv2.imencode('.jpg', cv2.flip(frame, 1))
+                frame = buffer.tobytes()
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            except Exception as e:
+                pass
 
-
-
+        else:
+            pass
 
 
     # def pipeline_model(path,filename,color='bgr'):

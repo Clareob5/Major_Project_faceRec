@@ -1,3 +1,4 @@
+import sys
 from flask import Flask, request, Response, render_template
 from werkzeug.utils import secure_filename
 import cv2
@@ -6,10 +7,12 @@ import os, sys
 import numpy as np
 from PIL import Image
 from threading import Thread
-from utils import pipeline_model
+from utils import pipeline_model, gen_frames
+from utils import img_manipulate
 
 from db import db_init, db
 from models import Img
+from models import Attendance
 #from app import views
 
 #app = Flask(__name__)
@@ -30,7 +33,7 @@ except OSError as error:
 
 app = Flask(__name__, template_folder='./templates')
 
-UPLOAD_FLODER = 'static/uploads'
+UPLOAD_FOLDER = 'static\\uploads'
 
 # SQLAlchemy config. Read more: https://flask-sqlalchemy.palletsprojects.com/en/2.x/
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///img.db'
@@ -44,9 +47,14 @@ camera = cv2.VideoCapture(0)
 def base():
     return render_template('base.html')
 
+
+@app.route('/index')
+def index():
+    return render_template('index.html', attendance = Attendance.query.all())
+
 @app.route('/capture')
 def capture():
-    return render_template('capture.html')
+     return render_template('capture.html')
 
 
 def getwidth(path):
@@ -61,16 +69,16 @@ def predict():
     if request.method == "POST":
         img = request.files['image']
         filename = img.filename
-        mimetype = img.mimetype
-        path = os.path.join(UPLOAD_FLODER, filename)
-        f.save(path)
+        print(filename)
+        path = os.path.join(UPLOAD_FOLDER, filename)
+
         w = getwidth(path)
         # prediction (pass to pipeline model)
         pipeline_model(path, filename, color='bgr')
 
         return render_template('predict.html', fileupload=True, img_name=filename, w=w)
 
-    return render_template('predict.html', fileupload=False, img_name="freeai.png")
+    return render_template('predict.html', fileupload=False)
 
 
 
@@ -107,29 +115,6 @@ def upload():
     # return 'Img Uploaded!', 200
 
 
-def gen_frames():  # generate frame by frame from camera
-    global out, capture,rec_frame
-    while True:
-        success, frame = camera.read() 
-        if success:
-            if(capture):
-                capture=0
-                now = datetime.datetime.now()
-                p = os.path.sep.join(['shots', "shot_{}.png".format(str(now).replace(":",''))])
-                cv2.imwrite(p, frame)
-                
-            try:
-                ret, buffer = cv2.imencode('.jpg', cv2.flip(frame,1))
-                frame = buffer.tobytes()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            except Exception as e:
-                pass
-                
-        else:
-            pass
-
-
 @app.route('/<int:id>')
 def get_img(id):
     img = Img.query.filter_by(id=id).first()
@@ -149,8 +134,24 @@ def tasks():
         if request.form.get('click') == 'Capture':
             global capture
             capture=1 
-            camera.release()
-            cv2.destroyAllWindows()                     
+        elif  request.form.get('face') == 'Face Only':
+            global face
+            face=not face 
+            if(face):
+                time.sleep(4)   
+        elif  request.form.get('stop') == 'Stop/Start':
+            
+            if(switch==1):
+                switch=0
+                camera.release()
+                cv2.destroyAllWindows()
+                
+            else:
+                camera = cv2.VideoCapture(0)
+                switch=1                  
     elif request.method=='GET':
         return render_template('capture.html')
     return render_template('capture.html')
+
+
+
