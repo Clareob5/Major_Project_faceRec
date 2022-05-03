@@ -155,3 +155,27 @@ def tasks():
 
 
 
+def gen_frames():  # generate frame by frame from camera
+    global out, capture, rec_frame
+    while True:
+        success, frame = camera.read()
+        if success:
+            if(capture):
+                capture = 0
+                now = datetime.datetime.now()
+                p = os.path.sep.join(
+                    ['shots', "shot_{}.png".format(str(now).replace(":", ''))])
+                cv2.imwrite(p, frame)
+                filename = os.path.basename(p)
+                pipeline_model(path, filename, color='bgr')
+                img_manipulate(frame)
+            try:
+                ret, buffer = cv2.imencode('.jpg', cv2.flip(frame, 1))
+                frame = buffer.tobytes()
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            except Exception as e:
+                pass
+
+        else:
+            pass
