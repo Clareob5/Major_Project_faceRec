@@ -17,9 +17,9 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
               <div class="navbar-nav">
-                <a class="nav-item nav-link" href="{{ url_for('base') }}">Home <span class="sr-only">(current)</span></a>
-                <a class="nav-item nav-link" href="{{ url_for('capture') }}">capture</a>
-                <a class="nav-item nav-link" href="{{ url_for('predict') }}">Attendance</a>
+                <a class="nav-item nav-link" href="{{ url_for('index') }}">Attendance<span class="sr-only">(current)</span></a>
+                <a class="nav-item nav-link" href="{{ url_for('capture') }}">Capture</a>
+                <a class="nav-item nav-link" href="{{ url_for('predict') }}">Predict</a>
                 
                 
               </div>
@@ -29,7 +29,7 @@
 
     {% block bodyblock %}
 
-        <p>Hello</p>
+
 
     {% endblock %}
 

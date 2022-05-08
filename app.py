@@ -7,7 +7,7 @@ import os, sys
 import numpy as np
 from PIL import Image
 from threading import Thread
-from utils import pipeline_model, gen_frames
+from utils import pipeline_model
 from utils import img_manipulate
 
 from db import db_init, db
@@ -43,6 +43,7 @@ db_init(app)
 
 camera = cv2.VideoCapture(0)
 
+#base route
 @app.route('/')
 def base():
     return render_template('base.html')
@@ -71,23 +72,27 @@ def predict():
         filename = img.filename
         print(filename)
         path = os.path.join(UPLOAD_FOLDER, filename)
+        img.save(path)
+        print(path)
 
         w = getwidth(path)
         # prediction (pass to pipeline model)
         pipeline_model(path, filename, color='bgr')
 
         return render_template('predict.html', fileupload=True, img_name=filename, w=w)
+        #return render_template('predict.html', text)
+
 
     return render_template('predict.html', fileupload=False)
 
 
-
+#upload image to databse function
 @app.route('/upload', methods=['POST'])
 def upload():
     pic = request.files['pic']
     if not pic:
         return 'No pic uploaded!', 400
-
+        
     filename = secure_filename(pic.filename)
     mimetype = pic.mimetype
     if not filename or not mimetype:
@@ -97,24 +102,10 @@ def upload():
     db.session.add(img)
     db.session.commit()
 
-    if request.method == "POST":
-        f = request.files['image']
-        filename=  f.filename
-        path = os.path.join(UPLOAD_FLODER,filename)
-        f.save(path)
-        w = getwidth(path)
-        # prediction (pass to pipeline model)
-        pipeline_model(path,filename,color='bgr')
 
+    return 'Img Uploaded!', 200
 
-        return render_template('gender.html',fileupload=True,img_name=filename, w=w)
-
-
-    return render_template('gender.html',fileupload=False,img_name="freeai.png")
-
-    # return 'Img Uploaded!', 200
-
-
+#function to return image
 @app.route('/<int:id>')
 def get_img(id):
     img = Img.query.filter_by(id=id).first()
@@ -123,10 +114,13 @@ def get_img(id):
 
     return Response(img.img, mimetype=img.mimetype)
 
+#video feed function
 @app.route('/video_feed')
 def video_feed():
-    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(capture_save(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+
+#method for switching the capture and stop buttons on and off
 @app.route('/requests',methods=['POST','GET'])
 def tasks():
     global switch,camera
@@ -134,11 +128,6 @@ def tasks():
         if request.form.get('click') == 'Capture':
             global capture
             capture=1 
-        elif  request.form.get('face') == 'Face Only':
-            global face
-            face=not face 
-            if(face):
-                time.sleep(4)   
         elif  request.form.get('stop') == 'Stop/Start':
             
             if(switch==1):
@@ -148,25 +137,32 @@ def tasks():
                 
             else:
                 camera = cv2.VideoCapture(0)
-                switch=1                  
+                switch=1
+                cv2.destroyAllWindows()
     elif request.method=='GET':
+        cv2.destroyAllWindows()
         return render_template('capture.html')
     return render_template('capture.html')
 
 
-
-def gen_frames():  # generate frame by frame from camera
-    global out, capture, rec_frame
+#capturing video from web cam 
+def capture_save(): 
+    global out, capture
+    #reads the camera while the on the capture page
     while True:
         success, frame = camera.read()
         if success:
             if(capture):
-                capture = 0
-                now = datetime.datetime.now()
-                p = os.path.sep.join(
-                    ['shots', "shot_{}.png".format(str(now).replace(":", ''))])
-                cv2.imwrite(p, frame)
-                filename = os.path.basename(p)
+                capture = 0 #if an image is captured the 1 is set back to 0 to allow for more to be taken
+                now = datetime.datetime.now() #sets the time of the image being taken
+                #sets the path of the image
+                path = os.path.sep.join(
+                    ['new_adds', "shot_{}.png".format(str(now).replace(":", ''))])
+                #saves image to specified path
+                cv2.imwrite(path, frame)
+                #gets filename by using the os module
+                filename = os.path.basename(path)
+                #sends it to pipeline model
                 pipeline_model(path, filename, color='bgr')
                 img_manipulate(frame)
             try:

@@ -9,13 +9,14 @@
     <div class="container">
         <br>
         <form action="#" method="post" enctype="multipart/form-data">
-            <label for="upload">Upload to predict</label>
+            <label for="upload">Upload to Predict and add to attendance</label>
             <input type="file" id="upload" name="image" required="true">
             <input type="submit" value="upload & predict">
         </form>
 
         <br>
         <form action="http://localhost:5000/upload" enctype="multipart/form-data" method="POST">
+            <label for="upload">Upload new person to the database</label>
             <input type="file" name="pic" />
             <input type="submit" value="Upload a file" />
         </form>

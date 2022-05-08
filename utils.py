@@ -11,18 +11,9 @@ from models import Attendance
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 
 
-model_cnn = keras.models.load_model("./model/my_h5_model.h5")
-mapped_faces = pickle.load(open("Mapped_Faces.pkl", 'rb'))
+model_cnn = keras.models.load_model("./model/finetuned_model.h5")
+mapped_faces = pickle.load(open("./model/facesMap.pkl", 'rb'))
 
-nameList = []
-
-
-# print('Model loaded sucessfully')
-# print(mapped_faces)
-
-
-# settings
-font = cv2.FONT_HERSHEY_SIMPLEX
 
 def markAttendance(name):
     name = name
@@ -39,7 +30,8 @@ def markAttendance(name):
 def pipeline_model(path,filename,color='bgr'):
     
     ImagePath=path
-    test_image=image.load_img(ImagePath,target_size=(64, 64))
+    test_image=image.load_img(ImagePath,target_size=(100, 100))
+    test_image = image.img_to_array(test_image)
     print(test_image)
 
     test_image=np.expand_dims(test_image,axis=0)
@@ -55,11 +47,15 @@ def pipeline_model(path,filename,color='bgr'):
     thickness = 2
    
     text = mapped_faces[np.argmax(result)]
-    cv2.putText(test_image,text,(1000,1000),font,5,(255,255,0),2)
-    os.remove(path)
     markAttendance(text)
+    cv2.putText(test_image,text,(1000,1000),font,5,(255,255,0),2)
+    cv2.imwrite('/static/predict/{}'.format(filename), test_image)
+
+    #return text
+    os.remove(path)
+
     
-    cv2.imwrite('./static/predict/{}'.format(filename),test_image)
+    
     
 def img_manipulate(image):
 
